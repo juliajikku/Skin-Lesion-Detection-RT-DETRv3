@@ -1,0 +1,23 @@
+metric: COCO
+
+num_classes: 1
+
+TrainDataset:
+  name: COCODataSet
+  image_dir: images
+  anno_path: annotations/instances_train.json
+  dataset_dir: /kaggle/input/datasets/juliajikku/isic2018/New folder
+  data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  name: COCODataSet
+  image_dir: images
+  anno_path: annotations/instances_val.json
+  dataset_dir: /kaggle/input/datasets/juliajikku/isic2018/New folder
+  allow_empty: true
+
+TestDataset:
+  name: COCODataSet
+  image_dir: images
+  anno_path: annotations/instances_test.json
+  dataset_dir: /kaggle/input/datasets/juliajikku/isic2018/New folder

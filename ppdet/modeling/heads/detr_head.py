@@ -553,7 +553,7 @@ class DINOv3Head(nn.Layer):
         self.num_queries_o2m = num_queries_o2m
 
     def forward(self, out_transformer, body_feats, inputs=None):
-        (dec_out_bboxes, dec_out_logits, enc_topk_bboxes, enc_topk_logits,
+        (dec_out_bboxes, dec_out_logits, decoder_embeddings, enc_topk_bboxes, enc_topk_logits,
          dn_meta) = out_transformer
         if self.training:
             assert inputs is not None
@@ -609,6 +609,7 @@ class DINOv3Head(nn.Layer):
                         out_logits_gid,
                         inputs['gt_bbox'],
                         inputs['gt_class'],
+                        decoder_embeddings=decoder_embeddings,
                         dn_out_bboxes=dn_out_bboxes_gid,
                         dn_out_logits=dn_out_logits_gid,
                         dn_meta=dn_meta[g_id])
@@ -636,6 +637,7 @@ class DINOv3Head(nn.Layer):
                 out_logits,
                 inputs['gt_bbox'],
                 inputs['gt_class'],
+                decoder_embeddings=decoder_embeddings,
                 dn_out_bboxes=dn_out_bboxes,
                 dn_out_logits=dn_out_logits,
                 dn_meta=dn_meta,
