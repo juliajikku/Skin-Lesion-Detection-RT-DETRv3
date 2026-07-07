@@ -392,23 +392,26 @@ class DETRLoss(nn.Layer):
             loss.update(
                 self._get_loss_mask(masks, gt_mask, match_indices, num_gts,
                                     postfix))
-        diversity_loss = paddle.zeros([], dtype=decoder_embeddings.dtype)
-        valid_images = 0
-        for b, (pred_idx, gt_idx) in enumerate(match_indices):
-            if len(pred_idx) <2:
-                continue
+        
+        
+        if decoder_embeddings is not None:
+            diversity_loss = paddle.zeros([], dtype=decoder_embeddings.dtype)
+            valid_images = 0
+            for b, (pred_idx, gt_idx) in enumerate(match_indices):
+                if len(pred_idx) < 2:
+                    continue
 
-            positive_embeddings = decoder_embeddings[b][pred_idx]
+                positive_embeddings = decoder_embeddings[b][pred_idx]
 
-            diversity_loss += self.diversity_loss(
-                 positive_embeddings
+                diversity_loss += self.diversity_loss(
+                     positive_embeddings
                     )
-            valid_images += 1
+                valid_images += 1
             
-        if valid_images > 0:
-            diversity_loss = diversity_loss / valid_images
+            if valid_images > 0:
+                diversity_loss = diversity_loss / valid_images
 
-        loss["loss_diversity"] = diversity_loss
+            loss["loss_diversity"] = diversity_loss
 
         return loss
 
