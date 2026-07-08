@@ -610,6 +610,7 @@ class DINOv3Head(nn.Layer):
                         inputs['gt_bbox'],
                         inputs['gt_class'],
                         decoder_embeddings=decoder_embeddings,
+                        image_names=inputs["image_name"],
                         dn_out_bboxes=dn_out_bboxes_gid,
                         dn_out_logits=dn_out_logits_gid,
                         dn_meta=dn_meta[g_id])
@@ -638,6 +639,7 @@ class DINOv3Head(nn.Layer):
                 inputs['gt_bbox'],
                 inputs['gt_class'],
                 decoder_embeddings=decoder_embeddings,
+                image_names=inputs["image_name"],
                 dn_out_bboxes=dn_out_bboxes,
                 dn_out_logits=dn_out_logits,
                 dn_meta=dn_meta,
