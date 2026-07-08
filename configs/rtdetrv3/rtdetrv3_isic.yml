@@ -17,7 +17,6 @@ save_dir: output/rtdetrv3_isic
 o2m_branch: True
 num_queries_o2m: 450
 
-pretrain_weights: output/rtdetrv3_isic/model_final.pdparams
 
 RTDETRV3:
   backbone: ResNet
