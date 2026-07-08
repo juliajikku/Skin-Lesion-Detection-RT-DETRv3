@@ -24,6 +24,7 @@ from .iou_loss import GIoULoss
 from .diversity_loss import DiversityLoss
 from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss, varifocal_loss_with_logits
 from ..bbox_utils import bbox_iou
+from ppdet.utils.difficulty_score_calc import DifficultyScore
 
 __all__ = ['DETRLoss', 'DINOLoss', 'DINOv3Loss']
 
@@ -77,6 +78,7 @@ class DETRLoss(nn.Layer):
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
         self.diversity_loss = DiversityLoss()
+        self.difficulty_module = DifficultyScore(csv_path="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/final_difficulty_scores.csv")
 
     def _get_loss_class(self,
                         logits,
@@ -322,6 +324,7 @@ class DETRLoss(nn.Layer):
                              dn_match_indices=None,
                              num_gts=1,
                              decoder_embeddings=None,
+                             image_names=None,
                              gt_score=None):
         if dn_match_indices is None:
             match_indices = self.matcher(
@@ -440,6 +443,7 @@ class DETRLoss(nn.Layer):
         dn_match_indices = kwargs.get("dn_match_indices", None)
         num_gts = kwargs.get("num_gts", None)
         decoder_embeddings = kwargs.get("decoder_embeddings", None)
+        image_names = kwargs.get("image_names", None)
         if num_gts is None:
             num_gts = self._get_num_gts(gt_class)
 
@@ -454,6 +458,7 @@ class DETRLoss(nn.Layer):
             dn_match_indices=dn_match_indices,
             num_gts=num_gts,
             decoder_embeddings=decoder_embeddings,
+            image_names=image_names,
             gt_score=gt_score if gt_score is not None else None)
 
         if self.aux_loss:
