@@ -78,7 +78,7 @@ class DETRLoss(nn.Layer):
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
         self.diversity_loss = DiversityLoss()
-        self.difficulty_module = DifficultyScore(csv_path="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/final_difficulty_scores.csv")
+        self.difficulty_module = DifficultyScore(csv_path="content/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv")
 
     def _get_loss_class(self,
                         logits,
@@ -406,9 +406,16 @@ class DETRLoss(nn.Layer):
 
                 positive_embeddings = decoder_embeddings[b][pred_idx]
 
-                diversity_loss += self.diversity_loss(
-                     positive_embeddings
-                    )
+                info = self.difficulty_module.get_difficulty(
+                    image_names[b]
+                )
+                
+                lambda_div = info["lambda_div"]
+                
+                diversity_loss += (
+                    lambda_div *
+                    self.diversity_loss(positive_embeddings)
+                )
                 valid_images += 1
             
             if valid_images > 0:
