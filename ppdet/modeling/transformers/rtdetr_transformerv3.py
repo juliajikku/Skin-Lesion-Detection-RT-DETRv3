@@ -256,7 +256,9 @@ class TransformerDecoder(nn.Layer):
             ref_points_detach = inter_ref_bbox.detach(
             ) if self.training else inter_ref_bbox
 
-        return paddle.stack(dec_out_bboxes), paddle.stack(dec_out_logits)
+            print("Decoder embedding shape:", output.shape)
+            decoder_embeddings = output
+        return paddle.stack(dec_out_bboxes), paddle.stack(dec_out_logits), decoder_embeddings
 
 
 @register
@@ -539,7 +541,7 @@ class RTDETRTransformerv3(nn.Layer):
             attn_masks = new_attn_mask
 
         # decoder
-        out_bboxes, out_logits = self.decoder(
+        out_bboxes, out_logits, decoder_embeddings= self.decoder(
             target,
             init_ref_points_unact,
             memory,
@@ -551,7 +553,7 @@ class RTDETRTransformerv3(nn.Layer):
             attn_mask=attn_masks,
             memory_mask=None,
             query_pos_head_inv_sig=self.query_pos_head_inv_sig)
-        return (out_bboxes, out_logits, enc_topk_bboxes, enc_topk_logits,
+        return (out_bboxes, out_logits, decoder_embeddings, enc_topk_bboxes, enc_topk_logits,
                 dn_metas)
 
     def _generate_anchors(self,

@@ -21,8 +21,10 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from .iou_loss import GIoULoss
+from .diversity_loss import DiversityLoss
 from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss, varifocal_loss_with_logits
 from ..bbox_utils import bbox_iou
+from ppdet.utils.difficulty_score_calc import DifficultyScore
 
 __all__ = ['DETRLoss', 'DINOLoss', 'DINOv3Loss']
 
@@ -75,6 +77,8 @@ class DETRLoss(nn.Layer):
                                                    loss_coeff['class'])
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
+        self.diversity_loss = DiversityLoss()
+        self.difficulty_module = DifficultyScore(csv_path="content/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")    
 
     def _get_loss_class(self,
                         logits,
@@ -319,6 +323,8 @@ class DETRLoss(nn.Layer):
                              postfix="",
                              dn_match_indices=None,
                              num_gts=1,
+                             decoder_embeddings=None,
+                             image_names=None,
                              gt_score=None):
         if dn_match_indices is None:
             match_indices = self.matcher(
@@ -389,6 +395,34 @@ class DETRLoss(nn.Layer):
             loss.update(
                 self._get_loss_mask(masks, gt_mask, match_indices, num_gts,
                                     postfix))
+        
+        
+        if decoder_embeddings is not None:
+            diversity_loss = paddle.zeros([], dtype=decoder_embeddings.dtype)
+            valid_images = 0
+            for b, (pred_idx, gt_idx) in enumerate(match_indices):
+                if len(pred_idx) < 2:
+                    continue
+
+                positive_embeddings = decoder_embeddings[b][pred_idx]
+
+                info = self.difficulty_module.get_difficulty(
+                    image_names[b]
+                )
+                
+                lambda_div = info["lambda_div"]
+                
+                diversity_loss += (
+                    lambda_div *
+                    self.diversity_loss(positive_embeddings)
+                )
+                valid_images += 1
+            
+            if valid_images > 0:
+                diversity_loss = diversity_loss / valid_images
+
+            loss["loss_diversity"] = diversity_loss
+
         return loss
 
     def forward(self,
@@ -415,6 +449,8 @@ class DETRLoss(nn.Layer):
 
         dn_match_indices = kwargs.get("dn_match_indices", None)
         num_gts = kwargs.get("num_gts", None)
+        decoder_embeddings = kwargs.get("decoder_embeddings", None)
+        image_names = kwargs.get("image_names", None)
         if num_gts is None:
             num_gts = self._get_num_gts(gt_class)
 
@@ -428,6 +464,8 @@ class DETRLoss(nn.Layer):
             postfix=postfix,
             dn_match_indices=dn_match_indices,
             num_gts=num_gts,
+            decoder_embeddings=decoder_embeddings,
+            image_names=image_names,
             gt_score=gt_score if gt_score is not None else None)
 
         if self.aux_loss:

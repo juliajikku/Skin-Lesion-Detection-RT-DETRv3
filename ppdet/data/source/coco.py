@@ -135,6 +135,7 @@ class COCODataSet(DetDataset):
             coco_rec = {
                 'im_file': im_path,
                 'im_id': np.array([img_id]),
+                'image_name': im_fname,        
                 'h': im_h,
                 'w': im_w,
             } if 'image' in self.data_fields else {}
