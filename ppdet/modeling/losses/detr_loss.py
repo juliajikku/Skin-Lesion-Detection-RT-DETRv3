@@ -50,8 +50,7 @@ class DETRLoss(nn.Layer):
                  use_vfl=False,
                  vfl_iou_type='bbox',
                  use_uni_match=False,
-                 uni_match_ind=0,
-                difficulty_csv_path=None):
+                 uni_match_ind=0):
         r"""
         Args:
             num_classes (int): The number of classes.
@@ -79,13 +78,7 @@ class DETRLoss(nn.Layer):
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
         self.diversity_loss = DiversityLoss()
-                    
-        if difficulty_csv_path is not None:
-            self.difficulty_module = DifficultyScore(
-                csv_path=difficulty_csv_path
-            )
-        else:
-            self.difficulty_module = None    
+        self.difficulty_module = DifficultyScore(csv_path="content/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")    
 
     def _get_loss_class(self,
                         logits,
