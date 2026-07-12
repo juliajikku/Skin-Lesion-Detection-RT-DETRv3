@@ -33,3 +33,5 @@ ResNet:
   freeze_at: -1
   freeze_norm: false
   norm_decay: 0.
+  
+difficulty_csv_path: /kaggle/input/your_dataset/final_difficulty_scores.csv
