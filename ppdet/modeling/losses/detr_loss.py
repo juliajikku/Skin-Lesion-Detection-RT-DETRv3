@@ -78,7 +78,7 @@ class DETRLoss(nn.Layer):
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
         self.diversity_loss = DiversityLoss()
-        self.difficulty_module = DifficultyScore(csv_path="content/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")    
+        self.difficulty_module = DifficultyScore(csv_path="/content/drive/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv")    
 
     def _get_loss_class(self,
                         logits,
