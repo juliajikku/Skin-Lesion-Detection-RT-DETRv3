@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 
 
 class DifficultyScore:
@@ -15,6 +16,7 @@ class DifficultyScore:
     def __init__(
         self,
         csv_path,
+        annotation_path,
         alpha=0.25,
         beta=0.40,
         gamma=0.35,
@@ -39,6 +41,13 @@ class DifficultyScore:
 
         # Load CSV
         self.df = pd.read_csv(csv_path)
+        with open(annotation_path, "r") as f:
+            coco = json.load(f)
+
+        self.id_to_name = {}
+
+        for img in coco["images"]:
+            self.id_to_name[img["id"]] = img["file_name"]
 
         # Compute everything once
         self.compute_difficulty()
@@ -111,11 +120,14 @@ class DifficultyScore:
 
     ########################################################
 
-    def get_difficulty(self, image_name):
+    def get_difficulty(self, im_id):
 
         """
         Return all information for one image.
         """
+
+        image_name = self.id_to_name[int(im_id)]
+
 
         if image_name not in self.lookup:
 
@@ -130,8 +142,8 @@ class DifficultyScore:
 
 if __name__ == "__main__":
 
-    module = DifficultyScore("final_difficulty_scores.csv")
+    module = DifficultyScore("final_difficulty_scores.csv","instances_train.json")
 
-    info = module.get_difficulty("ISIC_0012810.jpg")
+    info = module.get_difficulty(1)
 
     print(info)

@@ -78,7 +78,7 @@ class DETRLoss(nn.Layer):
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
         self.diversity_loss = DiversityLoss()
-        self.difficulty_module = DifficultyScore(csv_path="/content/drive/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv")    
+        self.difficulty_module = DifficultyScore(csv_path="/content/drive/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv",annotation_path="/content/drive/MyDrive/RTDETR_project/datasets/ISIC2018/annotations/instances_train.json")    
 
     def _get_loss_class(self,
                         logits,
@@ -324,7 +324,7 @@ class DETRLoss(nn.Layer):
                              dn_match_indices=None,
                              num_gts=1,
                              decoder_embeddings=None,
-                             image_names=None,
+                             image_ids=None,
                              gt_score=None):
         if dn_match_indices is None:
             match_indices = self.matcher(
@@ -406,9 +406,12 @@ class DETRLoss(nn.Layer):
 
                 positive_embeddings = decoder_embeddings[b][pred_idx]
 
+                print("Image ID:", image_ids[b])
+
                 info = self.difficulty_module.get_difficulty(
-                    image_names[b]
-                )
+                    image_ids[b])
+
+                print(info)
                 
                 lambda_div = info["lambda_div"]
                 
@@ -450,7 +453,7 @@ class DETRLoss(nn.Layer):
         dn_match_indices = kwargs.get("dn_match_indices", None)
         num_gts = kwargs.get("num_gts", None)
         decoder_embeddings = kwargs.get("decoder_embeddings", None)
-        image_names = kwargs.get("image_names", None)
+        image_ids = kwargs.get("image_ids", None)
         if num_gts is None:
             num_gts = self._get_num_gts(gt_class)
 
@@ -465,7 +468,7 @@ class DETRLoss(nn.Layer):
             dn_match_indices=dn_match_indices,
             num_gts=num_gts,
             decoder_embeddings=decoder_embeddings,
-            image_names=image_names,
+            image_ids=image_ids,
             gt_score=gt_score if gt_score is not None else None)
 
         if self.aux_loss:
@@ -502,13 +505,17 @@ class DINOLoss(DETRLoss):
                 gt_score=None,
                 **kwargs):
         num_gts = self._get_num_gts(gt_class)
+        decoder_embeddings = kwargs.get("decoder_embeddings", None)
+        image_ids = kwargs.get("image_ids", None)
         total_loss = super(DINOLoss, self).forward(
             boxes,
             logits,
             gt_bbox,
             gt_class,
             num_gts=num_gts,
-            gt_score=gt_score)
+            gt_score=gt_score,
+            decoder_embeddings=decoder_embeddings,
+            image_ids=image_ids)
 
         if dn_meta is not None:
             dn_positive_idx, dn_num_group = \
@@ -578,6 +585,10 @@ class DINOv3Loss(DETRLoss):
             gt_boxes_copy = gt_bbox
             gt_class_copy = gt_class
         num_gts_copy = self._get_num_gts(gt_class_copy)
+
+        decoder_embeddings = kwargs.get("decoder_embeddings", None)
+        image_ids = kwargs.get("image_ids", None)
+
         total_loss = self._get_prediction_loss(
             boxes[-1],
             logits[-1],
@@ -588,6 +599,8 @@ class DINOv3Loss(DETRLoss):
             postfix=postfix,
             dn_match_indices=None,
             num_gts=num_gts_copy,
+            decoder_embeddings=decoder_embeddings,
+            image_ids=image_ids,
             gt_score=gt_score if gt_score is not None else None)
 
         if self.aux_loss:
