@@ -572,11 +572,14 @@ class DINOv3Head(nn.Layer):
 
                     out_bboxes_o2m = paddle.concat([enc_topk_bboxes_o2m.unsqueeze(0), dec_out_bboxes_o2m])
                     out_logits_o2m = paddle.concat([enc_topk_logits_o2m.unsqueeze(0), dec_out_logits_o2m])
+                    decoder_embeddings, decoder_embeddings_o2m = paddle.split(decoder_embeddings, [total_dec_queries - self.num_queries_o2m, self.num_queries_o2m], axis=1)
                     loss_o2m = self.loss(
                         out_bboxes_o2m,
                         out_logits_o2m,
                         inputs['gt_bbox'],
                         inputs['gt_class'],
+                        decoder_embeddings=decoder_embeddings_o2m,
+                        image_ids=inputs["im_id"],
                         dn_out_bboxes=None,
                         dn_out_logits=None,
                         dn_meta=None,
