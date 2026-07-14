@@ -326,11 +326,26 @@ class DETRLoss(nn.Layer):
                              decoder_embeddings=None,
                              image_ids=None,
                              gt_score=None):
+        print("================================")
+        print("decoder_embeddings =", decoder_embeddings)
+        print("image_ids =", image_ids)
+        print("================================")
         if dn_match_indices is None:
             match_indices = self.matcher(
                 boxes, logits, gt_bbox, gt_class, masks=masks, gt_mask=gt_mask)
         else:
             match_indices = dn_match_indices
+
+        print("\n========== MATCH INFO ==========")
+
+        for i, (pred_idx, gt_idx) in enumerate(match_indices):
+            print(f"Image {i}")
+            print("pred_idx:", pred_idx)
+            print("gt_idx:", gt_idx)
+            print("len(pred_idx):", len(pred_idx))
+            print("len(gt_idx):", len(gt_idx))
+
+        print("===============================\n")
 
         if self.use_vfl:
             if gt_score is not None:  #ssod
@@ -396,30 +411,42 @@ class DETRLoss(nn.Layer):
                 self._get_loss_mask(masks, gt_mask, match_indices, num_gts,
                                     postfix))
         
-        
+        if decoder_embeddings is None or image_ids is None:
+            return loss
+
         if decoder_embeddings is not None:
             diversity_loss = paddle.zeros([], dtype=decoder_embeddings.dtype)
             valid_images = 0
-            for b, (pred_idx, gt_idx) in enumerate(match_indices):
-                if len(pred_idx) < 2:
-                    continue
+            
+        for b, (pred_idx, gt_idx) in enumerate(match_indices):
 
-                positive_embeddings = decoder_embeddings[b][pred_idx]
+            print("----------------")
+            print("Image:", b)
+            print("pred_idx =", pred_idx)
+            print("Number of matched queries =", len(pred_idx))
 
-                print("Image ID:", image_ids[b])
+            if len(pred_idx) < 2:
+                print("Skipped")
+                continue
 
-                info = self.difficulty_module.get_difficulty(
-                    image_ids[b])
+            print("Using diversity loss")
 
-                print(info)
-                
-                lambda_div = info["lambda_div"]
-                
-                diversity_loss += (
-                    lambda_div *
-                    self.diversity_loss(positive_embeddings)
-                )
-                valid_images += 1
+            positive_embeddings = decoder_embeddings[b][pred_idx]
+
+            print("Image ID:", image_ids[b])
+
+            info = self.difficulty_module.get_difficulty(image_ids[b])
+
+            print(info)
+
+            lambda_div = info["lambda_div"]
+
+            diversity_loss += (
+                lambda_div *
+                self.diversity_loss(positive_embeddings)
+            )
+
+            valid_images += 1
             
             if valid_images > 0:
                 diversity_loss = diversity_loss / valid_images
