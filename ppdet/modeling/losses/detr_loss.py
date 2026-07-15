@@ -84,7 +84,8 @@ class DETRLoss(nn.Layer):
                                         decoder_embeddings,
                                         pred_boxes,
                                         gt_bbox,
-                                        image_ids):
+                                        image_ids,
+                                        match_indices):
         """
         Compute difficulty-aware diversity loss using
         adaptive top-k query selection.
@@ -98,14 +99,18 @@ class DETRLoss(nn.Layer):
         batch_size = decoder_embeddings.shape[0]
     
         for b in range(batch_size):
+
+            pred_idx, gt_idx = match_indices[b]
+            if len(pred_idx) == 0:
+                continue
     
             info = self.difficulty_module.get_difficulty(image_ids[b])
             
             adaptive_k = info["adaptive_k"]
             lambda_div = info["lambda_div"]
             
-            pred = bbox_cxcywh_to_xyxy(pred_boxes[b])
-            gt = bbox_cxcywh_to_xyxy(gt_bbox[b])
+            pred = bbox_cxcywh_to_xyxy(pred_boxes[b][pred_idx])
+            gt = bbox_cxcywh_to_xyxy(gt_bbox[b][gt_idx])
             
             if gt.shape[0] == 0:
                 continue
@@ -120,15 +125,16 @@ class DETRLoss(nn.Layer):
             gx2 = gt[:, 2:3]
             gy2 = gt[:, 3:4]
             
-            ious = bbox_iou((px1,py1,px2,py2),(gx1[0], gy1[0], gx2[0], gy2[0]))
+            ious = bbox_iou((px1,py1,px2,py2),(gx1, gy1, gx2, gy2))
             ious = ious.squeeze(-1)
 
-            valid = paddle.argsort(ious, descending=True)
+            ranked = paddle.argsort(ious, descending=True)
 
-            k = min(adaptive_k, len(ranked))
+            k = min(adaptive_k, ranked.shape[0])
             topk_indices = ranked[:k]
 
-            positive_embeddings = decoder_embeddings[b][topk_indices]
+            matched_embeddings = decoder_embeddings[b][pred_idx]
+            positive_embeddings = matched_embeddings[topk_indices]
 
             if positive_embeddings.shape[0] < 2:
                 continue
@@ -469,7 +475,7 @@ class DETRLoss(nn.Layer):
         
         if decoder_embeddings is not None:
             
-            diversity_loss = self.compute_adaptive_query_diversity(decoder_embeddings, boxes[-1], gt_bbox, image_ids)
+            diversity_loss = self.compute_adaptive_query_diversity(decoder_embeddings, boxes[-1], gt_bbox, image_ids, match_indices)
            
             loss["loss_diversity"] = diversity_loss
 
