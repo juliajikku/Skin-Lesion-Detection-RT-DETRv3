@@ -99,20 +99,19 @@ class DETRLoss(nn.Layer):
     
         for b in range(batch_size):
     
-            ###############################################
-            # Read difficulty
-            ###############################################
-    
-            info = self.difficulty_module.get_difficulty(
-                image_ids[b])
-    
+            info = self.difficulty_module.get_difficulty(image_ids[b])
+
             adaptive_k = info["adaptive_k"]
-    
+
             lambda_div = info["lambda_div"]
-    
-            ###############################################
-            # (remaining code goes here)
-            ###############################################
+
+            pred = bbox_cxcywh_to_xyxy(pred_boxes[b])
+
+            gt = bbox_cxcywh_to_xyxy(gt_bbox[b])
+
+            ious = bbox_iou(pred, gt)
+
+            ious = ious.squeeze(-1)
     
         if valid_images > 0:
             diversity_loss /= valid_images
