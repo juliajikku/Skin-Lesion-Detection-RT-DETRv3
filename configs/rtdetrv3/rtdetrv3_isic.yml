@@ -62,7 +62,7 @@ RTDETRV3:
   post_process: DETRPostProcess
 
 ResNet:
-  depth: 18
+  depth: 50
   variant: d
   return_idx: [1, 2, 3]
   freeze_at: -1
