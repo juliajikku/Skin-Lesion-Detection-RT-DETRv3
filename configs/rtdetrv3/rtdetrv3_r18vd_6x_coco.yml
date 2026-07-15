@@ -1,5 +1,5 @@
 _BASE_: [
-  '../datasets/coco_detection.yml',
+  '../datasets/isic_detection.yml',
   '../runtime.yml',
   '_base_/optimizer_6x.yml',
   '_base_/rtdetrv3_r50vd.yml',
@@ -13,7 +13,7 @@ log_iter: 200
 o2m_branch: True
 num_queries_o2m: 450
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
 
 RTDETRV3:
   backbone: ResNet
@@ -22,15 +22,8 @@ RTDETRV3:
   detr_head: DINOv3Head
   aux_o2m_head: PPYOLOEHead
   post_process: DETRPostProcess
-  
-ResNet:
-  depth: 18
-  variant: d
-  return_idx: [1, 2, 3]
-  freeze_at: -1
-  freeze_norm: false
-  norm_decay: 0.
 
+  
 HybridEncoder:
   hidden_dim: 256
   use_encoder_idx: [2]
