@@ -256,7 +256,6 @@ class TransformerDecoder(nn.Layer):
             ref_points_detach = inter_ref_bbox.detach(
             ) if self.training else inter_ref_bbox
 
-            print("Decoder embedding shape:", output.shape)
             decoder_embeddings = output
         return paddle.stack(dec_out_bboxes), paddle.stack(dec_out_logits), decoder_embeddings
 
