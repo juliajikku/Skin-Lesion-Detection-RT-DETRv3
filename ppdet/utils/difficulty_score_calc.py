@@ -146,4 +146,3 @@ if __name__ == "__main__":
 
     info = module.get_difficulty(1)
 
-    print(info)
