@@ -80,6 +80,46 @@ class DETRLoss(nn.Layer):
         self.diversity_loss = DiversityLoss()
         self.difficulty_module = DifficultyScore(csv_path="/content/drive/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv",annotation_path="/content/drive/MyDrive/RTDETR_project/datasets/ISIC2018/annotations/instances_train.json")    
 
+    def compute_adaptive_query_diversity(self,
+                                        decoder_embeddings,
+                                        pred_boxes,
+                                        gt_bbox,
+                                        image_ids):
+        """
+        Compute difficulty-aware diversity loss using
+        adaptive top-k query selection.
+        """
+    
+        diversity_loss = paddle.zeros(
+            [], dtype=decoder_embeddings.dtype)
+    
+        valid_images = 0
+    
+        batch_size = decoder_embeddings.shape[0]
+    
+        for b in range(batch_size):
+    
+            ###############################################
+            # Read difficulty
+            ###############################################
+    
+            info = self.difficulty_module.get_difficulty(
+                image_ids[b])
+    
+            adaptive_k = info["adaptive_k"]
+    
+            lambda_div = info["lambda_div"]
+    
+            ###############################################
+            # (remaining code goes here)
+            ###############################################
+    
+        if valid_images > 0:
+            diversity_loss /= valid_images
+    
+        return diversity_loss
+
+    
     def _get_loss_class(self,
                         logits,
                         gt_class,
