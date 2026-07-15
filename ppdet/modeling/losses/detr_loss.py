@@ -28,6 +28,7 @@ from ppdet.utils.difficulty_score_calc import DifficultyScore
 
 __all__ = ['DETRLoss', 'DINOLoss', 'DINOv3Loss']
 
+TOP_M=200
 
 @register
 class DETRLoss(nn.Layer):
@@ -83,6 +84,7 @@ class DETRLoss(nn.Layer):
     def compute_adaptive_query_diversity(self,
                                         decoder_embeddings,
                                         pred_boxes,
+                                        pred_logits,
                                         gt_bbox,
                                         image_ids,):
         """
@@ -99,12 +101,17 @@ class DETRLoss(nn.Layer):
     
         for b in range(batch_size):
 
+            scores = F.sigmoid(pred_logits[b])
+            scores = paddle.max(scores, axis=-1)
+
+            top_scores, top_indices = paddle.topk(scores, k=min(TOP_M, scores.shape[0]))
+            
             info = self.difficulty_module.get_difficulty(image_ids[b])
             
             adaptive_k = info["adaptive_k"]
             lambda_div = info["lambda_div"]
             
-            pred = bbox_cxcywh_to_xyxy(pred_boxes[b])
+            pred = bbox_cxcywh_to_xyxy(pred_boxes[b][top_indices])
             gt = bbox_cxcywh_to_xyxy(gt_bbox[b])
             
             if gt.shape[0] == 0:
@@ -128,7 +135,8 @@ class DETRLoss(nn.Layer):
             k = min(adaptive_k, ranked.shape[0])
             topk_indices = ranked[:k]
 
-            positive_embeddings = decoder_embeddings[b][topk_indices]
+            candidate_embeddings = decoder_embeddings[b][top_indices]
+            positive_embeddings = candidate_embeddings[topk_indices]
 
             if positive_embeddings.shape[0] < 2:
                 continue
