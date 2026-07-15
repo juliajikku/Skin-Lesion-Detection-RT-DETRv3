@@ -12,42 +12,8 @@ find_unused_parameters: True
 log_iter: 50
 
 snapshot_epoch: 1
-save_dir: output/rtdetrv3_isic
+save_dir: /content/drive/MyDrive/RTDETR_project/checkpoints/julia-final
 
-o2m_branch: True
-num_queries_o2m: 450
-
-
-RTDETRV3:
-  backbone: ResNet
-  neck: HybridEncoder
-  transformer: RTDETRTransformerv3
-  detr_head: DINOv3Head
-  aux_o2m_head: PPYOLOEHead
-  post_process: DETRPostProcess
-
-ResNet:
-  depth: 18
-  variant: d
-  return_idx: [1, 2, 3]
-  freeze_at: -1
-  freeze_norm: false
-  norm_decay: 0.
-  
-
-_BASE_: [
-  '../datasets/isic_detection.yml',
-  '../runtime.yml',
-  '_base_/optimizer_6x.yml',
-  '_base_/rtdetrv3_r50vd.yml',
-  '_base_/rtdetr_reader.yml',
-]
-
-find_unused_parameters: True
-log_iter: 50
-
-snapshot_epoch: 1
-save_dir: output/rtdetrv3_isic
 
 o2m_branch: True
 num_queries_o2m: 450
@@ -68,4 +34,6 @@ ResNet:
   freeze_at: -1
   freeze_norm: false
   norm_decay: 0.
+  
+
 
