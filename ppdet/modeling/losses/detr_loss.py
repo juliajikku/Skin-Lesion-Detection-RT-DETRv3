@@ -80,6 +80,76 @@ class DETRLoss(nn.Layer):
         self.diversity_loss = DiversityLoss()
         self.difficulty_module = DifficultyScore(csv_path="/content/drive/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv",annotation_path="/content/drive/MyDrive/RTDETR_project/datasets/ISIC2018/annotations/instances_train.json")    
 
+    def compute_adaptive_query_diversity(self,
+                                        decoder_embeddings,
+                                        pred_boxes,
+                                        gt_bbox,
+                                        image_ids,):
+        """
+        Compute difficulty-aware diversity loss using
+        adaptive top-k query selection.
+        """
+                                            
+        diversity_loss = paddle.zeros(
+            [], dtype=decoder_embeddings.dtype)
+    
+        valid_images = 0
+    
+        batch_size = decoder_embeddings.shape[0]
+    
+        for b in range(batch_size):
+
+            info = self.difficulty_module.get_difficulty(image_ids[b])
+            
+            adaptive_k = info["adaptive_k"]
+            lambda_div = info["lambda_div"]
+            
+            pred = bbox_cxcywh_to_xyxy(pred_boxes[b])
+            gt = bbox_cxcywh_to_xyxy(gt_bbox[b])
+            
+            if gt.shape[0] == 0:
+                continue
+            
+            px1 = pred[:, 0:1]
+            py1 = pred[:, 1:2]
+            px2 = pred[:, 2:3]
+            py2 = pred[:, 3:4]
+    
+            gx1 = gt[0,0]
+            gy1 = gt[0,1]
+            gx2 = gt[0,2]
+            gy2 = gt[0,3]
+            
+            ious = bbox_iou((px1,py1,px2,py2),(gx1, gy1, gx2, gy2))
+            ious = ious.squeeze(-1)
+
+            ranked = paddle.argsort(ious, descending=True)
+
+            k = min(adaptive_k, ranked.shape[0])
+            topk_indices = ranked[:k]
+
+            positive_embeddings = decoder_embeddings[b][topk_indices]
+
+            if positive_embeddings.shape[0] < 2:
+                continue
+                
+            diversity_loss += (lambda_div * self.diversity_loss(positive_embeddings))
+            valid_images += 1
+
+            print("=" * 40)
+            print("Image:", image_ids[b])
+            print("Difficulty:", info["difficulty_score"])
+            print("Adaptive K:", adaptive_k)
+            print("Lambda:", lambda_div)
+            print("TopK:", len(topk_indices))
+            
+    
+        if valid_images > 0:
+            diversity_loss /= valid_images
+    
+        return diversity_loss
+
+    
     def _get_loss_class(self,
                         logits,
                         gt_class,
@@ -398,32 +468,9 @@ class DETRLoss(nn.Layer):
         
         
         if decoder_embeddings is not None:
-            diversity_loss = paddle.zeros([], dtype=decoder_embeddings.dtype)
-            valid_images = 0
-            for b, (pred_idx, gt_idx) in enumerate(match_indices):
-                if len(pred_idx) < 2:
-                    continue
-
-                positive_embeddings = decoder_embeddings[b][pred_idx]
-
-                print("Image ID:", image_ids[b])
-
-                info = self.difficulty_module.get_difficulty(
-                    image_ids[b])
-
-                print(info)
-                
-                lambda_div = info["lambda_div"]
-                
-                diversity_loss += (
-                    lambda_div *
-                    self.diversity_loss(positive_embeddings)
-                )
-                valid_images += 1
             
-            if valid_images > 0:
-                diversity_loss = diversity_loss / valid_images
-
+            diversity_loss = self.compute_adaptive_query_diversity(decoder_embeddings, boxes, gt_bbox, image_ids)
+           
             loss["loss_diversity"] = diversity_loss
 
         return loss
