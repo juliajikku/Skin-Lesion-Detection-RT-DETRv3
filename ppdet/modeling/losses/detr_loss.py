@@ -136,13 +136,6 @@ class DETRLoss(nn.Layer):
             diversity_loss += (lambda_div * self.diversity_loss(positive_embeddings))
             valid_images += 1
 
-            print("=" * 40)
-            print("Image:", image_ids[b])
-            print("Difficulty:", info["difficulty_score"])
-            print("Adaptive K:", adaptive_k)
-            print("Lambda:", lambda_div)
-            print("TopK:", len(topk_indices))
-            
     
         if valid_images > 0:
             diversity_loss /= valid_images
