@@ -79,7 +79,7 @@ class DETRLoss(nn.Layer):
             self.loss_coeff['class'][-1] = loss_coeff['no_object']
         self.giou_loss = GIoULoss()
         self.diversity_loss = DiversityLoss()
-        self.difficulty_module = DifficultyScore(csv_path="/content/drive/MyDrive/RTDETR_project/difficulty_module/final_difficulty_scores.csv",annotation_path="/content/drive/MyDrive/RTDETR_project/datasets/ISIC2018/annotations/instances_train.json")    
+        self.difficulty_module = DifficultyScore(csv_path="datasets/ISIC2018/final_difficulty_scores.csv",annotation_path="datasets/ISIC2018/annotations/instances_train.json")    
 
     def compute_adaptive_query_diversity(self,
                                         decoder_embeddings,
@@ -142,7 +142,8 @@ class DETRLoss(nn.Layer):
                 continue
                 
             diversity_loss += (lambda_div * self.diversity_loss(positive_embeddings))
-            valid_images += 1            
+            valid_images += 1
+
     
         if valid_images > 0:
             diversity_loss /= valid_images
